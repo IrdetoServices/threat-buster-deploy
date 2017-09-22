@@ -14,6 +14,8 @@ export DYNAMODB_PLUGIN_VERSION=`mvn -q -Dexec.executable="echo" -Dexec.args='${p
 export JANUSGRAPH_DYNAMODB_SERVER_DIRNAME=${ARTIFACT_NAME}-${DYNAMODB_PLUGIN_VERSION}
 export WORKDIR=${JANUSGRAPH_DYNAMODB_HOME}/server
 export JANUSGRAPH_SERVER_HOME=${WORKDIR}/${JANUSGRAPH_DYNAMODB_SERVER_DIRNAME}
+export JANUSGRAPH_VANILLA_SERVER_DIRNAME=janusgraph-${JANUSGRAPH_VERSION}-hadoop2
+export JANUSGRAPH_DYNAMODB_SERVER_ZIP=${JANUSGRAPH_DYNAMODB_SERVER_DIRNAME}.zip
 
 while getopts c OPTION
 do	case "$OPTION" in
@@ -30,9 +32,14 @@ if [ ! -d "server" ]; then
     echo "Building Docker Images using shipped build scripts - make a coffee!"
     src/test/resources/install-gremlin-server.sh
     ./bin/gremlin-server.sh -i org.apache.tinkerpop gremlin-python $TINKERPOP_VERSION
-    pushd $DYNAMOBD_JANUS_PROJECT
+    python3 ../AddPythonSupportToJanus.py $JANUSGRAPH_SERVER_HOME/conf/gremlin-server/gremlin-server.yaml -o $JANUSGRAPH_SERVER_HOME/conf/gremlin-server/gremlin-server.yaml
+    python3 ../AddPythonSupportToJanus.py $JANUSGRAPH_SERVER_HOME/conf/gremlin-server/gremlin-server-local.yaml -o $JANUSGRAPH_SERVER_HOME/conf/gremlin-server/gremlin-server-python-local.yaml
+    python3 ../AddPythonSupportToJanus.py $JANUSGRAPH_SERVER_HOME/conf/gremlin-server/gremlin-server-local-docker.yaml -o $JANUSGRAPH_SERVER_HOME/conf/gremlin-server/gremlin-server-python-local-docker.yaml
+    # As we've changed stuff need to recreate the zip the official script creates
+    zip -rq $WORKDIR/${JANUSGRAPH_DYNAMODB_SERVER_ZIP} $WORKDIR/${JANUSGRAPH_DYNAMODB_SERVER_DIRNAME}
     cp $WORKDIR/dynamodb-janusgraph-storage-backend-*.zip src/test/resources/dynamodb-janusgraph-docker
     mvn docker:build -Pdynamodb-janusgraph-docker
+
 
 fi
 
