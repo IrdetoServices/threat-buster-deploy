@@ -49,3 +49,15 @@ function build_docker_image {
 
     fi
 }
+
+function copy_cloud_formations {
+
+    aws s3 cp cloudformation/ecs.yaml s3://$BUCKET/ecs.yaml
+    aws s3 cp cloudformation/random_input.yaml s3://$BUCKET/random_input.yaml
+    aws s3 cp dynamodb-janusgraph-storage-backend/dynamodb-janusgraph-tables-multiple.yaml s3://$BUCKET/dynamodb-janusgraph-tables-multiple.yaml
+    aws s3 cp threat-buster/cloudformation/rds.yaml s3://$BUCKET/rds.yaml
+    rm cloudformation/lambda_function.zip
+    zip -Dj cloudformation/lambda_function.zip cloudformation-random-string/lambda_function.py
+    aws s3 cp cloudformation/lambda_function.zip s3://$BUCKET/lambda_function.zip
+
+}

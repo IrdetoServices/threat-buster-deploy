@@ -10,7 +10,7 @@ do	case "$o" in
 	esac
 done
 
-source docker_image.sh
+source functions.sh
 
 COMMAND=`aws ecr get-login --no-include-email --region eu-west-2`
 $COMMAND

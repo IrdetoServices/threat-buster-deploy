@@ -4,3 +4,6 @@
 [submodule "threat-buster"]
 	path = threat-buster
 	url = https://github.com/IrdetoServices/threat-buster
+[submodule "cloudformation-random-string"]
+	path = cloudformation-random-string
+	url = https://github.com/sophos/cloudformation-random-string

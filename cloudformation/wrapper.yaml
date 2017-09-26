@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Wrapper CloudFormation Yaml Script for Threat-Buster
+Parameters:
+  Bucket:
+    Type: String
+    Description: Bucket Name for stored scripts
+  CertificateARN:
+    Type: String
+    Description: "The ARN of the certificate to use on the load balancer."
+Resources:
+  RandomInput:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.eu-west-2.amazonaws.com/cf-templates-threat-buster/random_input.yaml
+      TimeoutInMinutes: '60'
+      Parameters:
+        Bucket: cf-templates-threat-buster
+  ecs:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.eu-west-2.amazonaws.com/cf-templates-threat-buster/ecs.yaml
+      TimeoutInMinutes: '60'
+  DynamoTables:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.eu-west-2.amazonaws.com/cf-templates-threat-buster/dynamodb-janusgraph-tables-multiple.yaml
+      TimeoutInMinutes: '60'
+      Parameters:
+        TablePrefix: jg
+  DBPassword:
+    Type: AWS::CloudFormation::CustomResource
+    DependsOn: RandomInput
+    Properties:
+      Length: 25
+      Punctuation: true
+      RDSCompatible: true
+      ServiceToken: !GetAtt RandomInput.Outputs.Arn
+  ThreatBuster:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.eu-west-2.amazonaws.com/cf-templates-threat-buster/rds.yaml
+      TimeoutInMinutes: '60'
+      Parameters:
+        DBUser: threatbuster
+        DBPassword: !GetAtt DBPassword.RandomString
+        BaseName: threatbuster
+        DNSName: bob
+        CertificateARN: !Ref CertificateARN
