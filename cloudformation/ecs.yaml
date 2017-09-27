@@ -184,3 +184,9 @@ Resources:
         FromPort: !Ref SecurityIngressFromPort
         ToPort: !Ref SecurityIngressToPort
         SourceSecurityGroupId: !Ref SecurityGroupId
+  Repository:
+    Type: "AWS::ECR::Repository"
+Outputs:
+  Repository:
+    Description: ECR Repository
+    Value: !Ref Repository

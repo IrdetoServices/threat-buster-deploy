@@ -20,15 +20,12 @@ Parameters:
   SubnetCidr3:
     Type: String
     Description: Specifies the CIDR Block of Subnet 3
-    Default: ''
   VpcAvailabilityZones:
     Type: CommaDelimitedList
     Description: >
       Specifies a comma-separated list of 3 VPC Availability Zones for
       the creation of new subnets. These zones must have the available status.
     Default: 'eu-west-2a,eu-west-2b,eu-west-2b'
-Conditions:
-  CreateSubnet3: !Not [!Equals [!Ref SubnetCidr3, '']]
 Resources:
   Vpc:
     Type: AWS::EC2::VPC
@@ -49,6 +46,13 @@ Resources:
       VpcId: !Ref Vpc
       CidrBlock: !Ref SubnetCidr2
       AvailabilityZone: !Select [ 1, !Ref VpcAvailabilityZones ]
+      MapPublicIpOnLaunch: true
+  PubSubnetAz3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !Ref SubnetCidr3
+      AvailabilityZone: !Select [ 2, !Ref VpcAvailabilityZones ]
       MapPublicIpOnLaunch: true
   InternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -77,6 +81,11 @@ Resources:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PubSubnetAz2
+      RouteTableId: !Ref RouteViaIgw
+  PubSubnet3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PubSubnetAz3
       RouteTableId: !Ref RouteViaIgw
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -107,4 +116,4 @@ Outputs:
     Value: !Ref Vpc
   SubnetIds:
     Description: List of Subnet Ids
-    Value: !Join [",", [!Ref "PubSubnetAz1", !Ref "PubSubnetAz2"]]
+    Value: !Join [",", [!Ref "PubSubnetAz1", !Ref "PubSubnetAz2", !Ref "PubSubnetAz3"]]
