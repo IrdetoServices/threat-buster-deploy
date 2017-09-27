@@ -8,6 +8,15 @@ Parameters:
     Type: String
     Description: "The ARN of the certificate to use on the load balancer."
 Resources:
+  Vpc:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.eu-west-2.amazonaws.com/cf-templates-threat-buster/vpc.yaml
+      TimeoutInMinutes: '60'
+      Parameters:
+        VpcCidr: 10.0.0.0/16
+        SubnetCidr1: 10.0.0.0/24
+        SubnetCidr2: 10.0.1.0/24
   RandomInput:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -20,13 +29,19 @@ Resources:
     Properties:
       TemplateURL: https://s3.eu-west-2.amazonaws.com/cf-templates-threat-buster/ecs.yaml
       TimeoutInMinutes: '60'
+      Parameters:
+        SecurityGroupId: !GetAtt Vpc.Outputs.InstanceSecurityGroup
+        VpcId: !GetAtt Vpc.Outputs.Vpc
+        SubnetId: !GetAtt Vpc.Outputs.SubnetIds
+        SecurityIngressFromPort: 8182
+        SecurityIngressToPort: 8182
   DynamoTables:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: https://s3.eu-west-2.amazonaws.com/cf-templates-threat-buster/dynamodb-janusgraph-tables-multiple.yaml
       TimeoutInMinutes: '60'
       Parameters:
-        TablePrefix: jg
+        TablePrefix: !Join [ "", [jg, !Ref "AWS::StackName" ]]
   DBPassword:
     Type: AWS::CloudFormation::CustomResource
     DependsOn: RandomInput
@@ -46,3 +61,7 @@ Resources:
         BaseName: threatbuster
         DNSName: bob
         CertificateARN: !Ref CertificateARN
+        VpcId: !GetAtt Vpc.Outputs.Vpc
+        SubnetId: !GetAtt Vpc.Outputs.SubnetIds
+        SecurityGroupId: !GetAtt Vpc.Outputs.InstanceSecurityGroup
+
