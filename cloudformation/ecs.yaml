@@ -154,6 +154,7 @@ Resources:
            #!/bin/bash
            echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
            echo ECS_BACKEND_HOST=${EcsEndpoint} >> /etc/ecs/ecs.config
+           echo ECS_ENABLE_TASK_IAM_ROLE=true >> /etc/ecs/ecs.config
         - Fn::Base64: !Sub |
            #!/bin/bash
            echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
@@ -190,3 +191,6 @@ Outputs:
   Repository:
     Description: ECR Repository
     Value: !Ref Repository
+  Cluster:
+    Description: ECS Cluster
+    Value: !Ref ECSCluster

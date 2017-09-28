@@ -20,12 +20,11 @@ Parameters:
   SubnetCidr3:
     Type: String
     Description: Specifies the CIDR Block of Subnet 3
-  VpcAvailabilityZones:
-    Type: CommaDelimitedList
-    Description: >
-      Specifies a comma-separated list of 3 VPC Availability Zones for
-      the creation of new subnets. These zones must have the available status.
-    Default: 'eu-west-2a,eu-west-2b,eu-west-2b'
+  NumberOfAZs:
+    Type: Number
+    Description: Number of AZ's to create - some regions have 2/3 can be 2 or 3
+Conditions:
+  CreateThirdAz: !Equals [!Ref NumberOfAZs, 3]
 Resources:
   Vpc:
     Type: AWS::EC2::VPC
@@ -38,21 +37,22 @@ Resources:
     Properties:
       VpcId: !Ref Vpc
       CidrBlock: !Ref SubnetCidr1
-      AvailabilityZone: !Select [ 0, !Ref VpcAvailabilityZones ]
+      AvailabilityZone: !Select [ 0, !GetAZs "" ]
       MapPublicIpOnLaunch: true
   PubSubnetAz2:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref Vpc
       CidrBlock: !Ref SubnetCidr2
-      AvailabilityZone: !Select [ 1, !Ref VpcAvailabilityZones ]
+      AvailabilityZone: !Select [ 1, !GetAZs "" ]
       MapPublicIpOnLaunch: true
   PubSubnetAz3:
+    Condition: CreateThirdAz
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref Vpc
       CidrBlock: !Ref SubnetCidr3
-      AvailabilityZone: !Select [ 2, !Ref VpcAvailabilityZones ]
+      AvailabilityZone: !Select [ 2, !GetAZs "" ]
       MapPublicIpOnLaunch: true
   InternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -83,6 +83,7 @@ Resources:
       SubnetId: !Ref PubSubnetAz2
       RouteTableId: !Ref RouteViaIgw
   PubSubnet3RouteTableAssociation:
+    Condition: CreateThirdAz
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PubSubnetAz3
@@ -116,4 +117,4 @@ Outputs:
     Value: !Ref Vpc
   SubnetIds:
     Description: List of Subnet Ids
-    Value: !Join [",", [!Ref "PubSubnetAz1", !Ref "PubSubnetAz2", !Ref "PubSubnetAz3"]]
+    Value: !If [CreateThirdAz, !Join [",", [!Ref "PubSubnetAz1", !Ref "PubSubnetAz2", !Ref "PubSubnetAz3"]], !Join [",", [!Ref "PubSubnetAz1", !Ref "PubSubnetAz2"]]]

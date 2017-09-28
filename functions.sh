@@ -17,17 +17,10 @@ function build_docker_image {
     export JANUSGRAPH_DYNAMODB_SERVER_ZIP=${JANUSGRAPH_DYNAMODB_SERVER_DIRNAME}.zip
 
 
-    while getopts c OPTION
-    do	case "$OPTION" in
-        c)	CLEAN=true;
-            echo "Cleaning"
-            rm -rf $WORKDIR
-            ;;
-        [?])	print >&2 "Usage: $0 [-c]"
-            exit 1;;
-        esac
-    done
-
+    if [[ $CLEAN ]] ; then
+        echo "Cleaning"
+        rm -rf $WORKDIR
+    fi
 
     if ! pgrep -f docker > /dev/null ; then
         echo "Docker must be running"
@@ -53,6 +46,7 @@ function build_docker_image {
 function copy_cloud_formations {
 
     aws s3 cp cloudformation/ecs.yaml s3://$BUCKET/ecs.yaml
+    aws s3 cp cloudformation/ecs_task.yaml s3://$BUCKET/ecs_task.yaml
     aws s3 cp cloudformation/random_input.yaml s3://$BUCKET/random_input.yaml
     aws s3 cp cloudformation/vpc.yaml s3://$BUCKET/vpc.yaml
     aws s3 cp dynamodb-janusgraph-storage-backend/dynamodb-janusgraph-tables-multiple.yaml s3://$BUCKET/dynamodb-janusgraph-tables-multiple.yaml

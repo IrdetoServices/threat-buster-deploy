@@ -2,10 +2,12 @@
 
 echo "Script requires working and configured AWS CLI"
 
-while getopts n:c: o
-do	case "$o" in
-	n)	NAME="$OPTARG";;
-	[?])	print >&2 "Usage: $0 [-n] Name"
+while getopts cr:u: OPTION
+do	case "$OPTION" in
+	c)	CLEAN=true;;
+	r)  REPO="$OPTARG";;
+	u)  REPO_URL="$OPTARG";;
+	[?])	printf "Usage: $0 -r REPO -u REPO_URL"
 		exit 1;;
 	esac
 done
@@ -17,8 +19,7 @@ $COMMAND
 
 build_docker_image
 
-docker tag dynamodb-janusgraph/server:latest 187415578575.dkr.ecr.eu-west-2.amazonaws.com/dynamodb-janusgraph:latest
-docker push 187415578575.dkr.ecr.eu-west-2.amazonaws.com/dynamodb-janusgraph:latest
+docker tag dynamodb-janusgraph/server:latest $REPO_URL/$REPO:latest
+docker push $REPO_URL/$REPO:latest
 
-aws cloudformation create-stack --stack-name janus-tables-$NAME --template-body file://dynamodb-janusgraph-storage-backend/dynamodb-janusgraph-tables-multiple.yaml --region eu-west-2 --capabilities CAPABILITY_IAM
-aws cloudformation create-stack --stack-name ecs-$NAME --template-body file://cloudformation/ecs.yaml --region eu-west-2 --capabilities CAPABILITY_IAM
+echo "To Run Task Run"

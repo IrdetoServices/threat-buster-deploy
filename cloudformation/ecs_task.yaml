@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: ECS Task deployment
+Parameters:
+  DynamoTablePrefix:
+    Type: String
+    Description: Dynamo Table Prefix for task
+  Image:
+    Type: String
+    Description: Docker Image to run
+Resources:
+  ECSJanusTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ ecs-tasks.amazonaws.com ]
+          Action: ['sts:AssumeRole']
+      Path: /
+  DynamoPrefixedTablesPolicy:
+      Type: "AWS::IAM::Policy"
+      Properties:
+        Roles:
+          - !Ref ECSJanusTaskRole
+        PolicyName: !Join ["", ["dynamo-task-access-", !Ref DynamoTablePrefix ]]
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            -
+              Effect: Allow
+              Action:
+                  - "dynamodb:*"
+              Resource:
+                  - !Join ["", [ "arn:aws:dynamodb:", !Ref 'AWS::Region', ":", !Ref 'AWS::AccountId', ":table/", !Ref DynamoTablePrefix, "*" ]]
+  ECSTaskRoleInstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Path: /
+      Roles:
+        - !Ref ECSJanusTaskRole
+  ECSJanusTaskLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 7
+  ECSJanusTaskDefinition:
+    Type: "AWS::ECS::TaskDefinition"
+    Properties:
+      Family: !Join [ "", [ "Janus-", !Ref "AWS::StackName"]]
+      TaskRoleArn: !Ref ECSJanusTaskRole
+      ContainerDefinitions:
+        -
+          Name: !Ref 'AWS::StackName'
+          PortMappings:
+            - HostPort: 8182
+              ContainerPort: 8182
+              Protocol: tcp
+          Essential: true
+          Image: !Ref Image
+          Command:
+            - "/var/jg/bin/gremlin-server.sh"
+            - "./conf/gremlin-server/gremlin-server.yaml"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref ECSJanusTaskLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: jg
+          MemoryReservation: 500
+          Cpu: 0
+Outputs:
+  ECSTaskDefinition:
+    Value: !Ref ECSJanusTaskDefinition
+    Description: ECS Task Definition

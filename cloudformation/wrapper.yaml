@@ -18,6 +18,7 @@ Resources:
         SubnetCidr1: 10.0.0.0/24
         SubnetCidr2: 10.0.1.0/24
         SubnetCidr3: 10.0.2.0/24
+        NumberOfAZs: 2
   RandomInput:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -36,6 +37,18 @@ Resources:
         SubnetId: !GetAtt Vpc.Outputs.SubnetIds
         SecurityIngressFromPort: 8182
         SecurityIngressToPort: 8182
+  ecsTask:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.eu-west-2.amazonaws.com/cf-templates-threat-buster/ecs_task.yaml
+      TimeoutInMinutes: '60'
+      Parameters:
+        DynamoTablePrefix: !Join [ "", [jg, !Ref "AWS::StackName" ]]
+        Image: !Sub
+          - "${account}.dkr.ecr.${region}.amazonaws.com/${repo}:latest"
+          - account: !Ref AWS::AccountId
+            region: !Ref AWS::Region
+            repo: !GetAtt ecs.Outputs.Repository
   DynamoTables:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -65,4 +78,7 @@ Resources:
         VpcId: !GetAtt Vpc.Outputs.Vpc
         SubnetId: !GetAtt Vpc.Outputs.SubnetIds
         SecurityGroupId: !GetAtt Vpc.Outputs.InstanceSecurityGroup
-
+Outputs:
+  TaskRunCmd:
+    Value: !Sub "aws ecs run-task --cluster ${ecs.Outputs.Cluster} --task-definition ${ecsTask.Outputs.ECSTaskDefinition} --region ${AWS::Region}"
+    Description: Command to run task
