@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creates an ECR Repository and Bucket for Scripts/Code
+Resources:
+  Repository:
+    Type: "AWS::ECR::Repository"
+  CloudFormationS3Bucket:
+          Type: "AWS::S3::Bucket"
+          Properties:
+            AccessControl: Private
+Outputs:
+  Repository:
+    Description: ECR Repository
+    Value: !Ref Repository
+  RepositoryUrl:
+    Description: ECR Repository URL
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com"
+  ScriptBucket:
+    Description: Bucket for CF scripts
+    Value: !Ref CloudFormationS3Bucket

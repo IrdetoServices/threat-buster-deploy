@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+if [ -f local_parameters.sh ] ; then
+    source local_parameters.sh
+else
+    echo "See Readme - local_paramters.sh needed"
+    exit 1
+fi
+
 function build_docker_image {
     export DYNAMOBD_JANUS_PROJECT='./dynamodb-janusgraph-storage-backend'
 
@@ -45,14 +52,15 @@ function build_docker_image {
 
 function copy_cloud_formations {
 
-    aws s3 cp cloudformation/ecs.yaml s3://$BUCKET/ecs.yaml
-    aws s3 cp cloudformation/ecs_task.yaml s3://$BUCKET/ecs_task.yaml
-    aws s3 cp cloudformation/random_input.yaml s3://$BUCKET/random_input.yaml
-    aws s3 cp cloudformation/vpc.yaml s3://$BUCKET/vpc.yaml
-    aws s3 cp dynamodb-janusgraph-storage-backend/dynamodb-janusgraph-tables-multiple.yaml s3://$BUCKET/dynamodb-janusgraph-tables-multiple.yaml
-    aws s3 cp cloudformation/rds.yaml s3://$BUCKET/rds.yaml
+    aws s3 cp cloudformation/ecs.yaml s3://$SCRIPT_BUCKET/ecs.yaml
+    aws s3 cp cloudformation/ecs_task.yaml s3://$SCRIPT_BUCKET/ecs_task.yaml
+    aws s3 cp cloudformation/random_input.yaml s3://$SCRIPT_BUCKET/random_input.yaml
+    aws s3 cp cloudformation/vpc.yaml s3://$SCRIPT_BUCKET/vpc.yaml
+    aws s3 cp dynamodb-janusgraph-storage-backend/dynamodb-janusgraph-tables-multiple.yaml s3://$SCRIPT_BUCKET/dynamodb-janusgraph-tables-multiple.yaml
+    aws s3 cp cloudformation/rds.yaml s3://$SCRIPT_BUCKET/rds.yaml
     rm cloudformation/lambda_function.zip
     zip -Dj cloudformation/lambda_function.zip cloudformation-random-string/lambda_function.py
-    aws s3 cp cloudformation/lambda_function.zip s3://$BUCKET/lambda_function.zip
+    aws s3 cp cloudformation/lambda_function.zip s3://$SCRIPT_BUCKET/lambda_function.zip
 
 }
+

@@ -1,17 +1,20 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Wrapper CloudFormation Yaml Script for Threat-Buster
 Parameters:
-  Bucket:
+  ScriptBucket:
     Type: String
     Description: Bucket Name for stored scripts
   CertificateARN:
     Type: String
     Description: "The ARN of the certificate to use on the load balancer."
+  Image:
+    Type: String
+    Description: The docker image
 Resources:
   Vpc:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.eu-west-2.amazonaws.com/cf-templates-threat-buster/vpc.yaml
+      TemplateURL: !Sub "https://s3.${AWS::Region}.amazonaws.com/${ScriptBucket}/vpc.yaml"
       TimeoutInMinutes: '60'
       Parameters:
         VpcCidr: 10.0.0.0/16
@@ -22,14 +25,14 @@ Resources:
   RandomInput:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.eu-west-2.amazonaws.com/cf-templates-threat-buster/random_input.yaml
+      TemplateURL: !Sub "https://s3.${AWS::Region}.amazonaws.com/${ScriptBucket}/random_input.yaml"
       TimeoutInMinutes: '60'
       Parameters:
         Bucket: cf-templates-threat-buster
   ecs:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.eu-west-2.amazonaws.com/cf-templates-threat-buster/ecs.yaml
+      TemplateURL: !Sub "https://s3.${AWS::Region}.amazonaws.com/${ScriptBucket}/ecs.yaml"
       TimeoutInMinutes: '60'
       Parameters:
         SecurityGroupId: !GetAtt Vpc.Outputs.InstanceSecurityGroup
@@ -40,20 +43,19 @@ Resources:
   ecsTask:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.eu-west-2.amazonaws.com/cf-templates-threat-buster/ecs_task.yaml
+      TemplateURL: !Sub "https://s3.${AWS::Region}.amazonaws.com/${ScriptBucket}/ecs_task.yaml"
       TimeoutInMinutes: '60'
       Parameters:
         DynamoTablePrefix: !Join [ "", [jg, !Ref "AWS::StackName" ]]
-        Image: !Sub
-          - "${account}.dkr.ecr.${region}.amazonaws.com/${repo}:latest"
-          - account: !Ref AWS::AccountId
-            region: !Ref AWS::Region
-            repo: !GetAtt ecs.Outputs.Repository
+        Image: !Ref Image
         SubnetId: !GetAtt Vpc.Outputs.SubnetIds
+        Cluster: !GetAtt ecs.Outputs.Cluster
+        VpcId: !GetAtt Vpc.Outputs.Vpc
+        ECSALBSecurityGroup: !GetAtt ecs.Outputs.ECSALBSecurityGroup
   DynamoTables:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.eu-west-2.amazonaws.com/cf-templates-threat-buster/dynamodb-janusgraph-tables-multiple.yaml
+      TemplateURL: !Sub "https://s3.${AWS::Region}.amazonaws.com/${ScriptBucket}/dynamodb-janusgraph-tables-multiple.yaml"
       TimeoutInMinutes: '60'
       Parameters:
         TablePrefix: !Join [ "", [jg, !Ref "AWS::StackName" ]]
@@ -68,7 +70,7 @@ Resources:
   ThreatBuster:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.eu-west-2.amazonaws.com/cf-templates-threat-buster/rds.yaml
+      TemplateURL: !Sub "https://s3.${AWS::Region}.amazonaws.com/${ScriptBucket}/rds.yaml"
       TimeoutInMinutes: '60'
       Parameters:
         DBUser: threatbuster

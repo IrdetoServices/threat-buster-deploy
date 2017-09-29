@@ -7,9 +7,27 @@ Parameters:
   Image:
     Type: String
     Description: Docker Image to run
+  Cluster:
+      Type: String
+      Description: ECS Cluster
   SubnetId:
       Type: List<AWS::EC2::Subnet::Id>
       Description: Select at two subnets in your selected VPC.
+  VpcId:
+      Type: String
+      Description: >
+        Optional - Specifies the ID of an existing VPC in which to launch
+        your container instances. If you specify a VPC ID, you must specify a list of
+        existing subnets in that VPC. If you do not specify a VPC ID, a new VPC is created
+        with atleast 1 subnet.
+      Default: ''
+      AllowedPattern: "^(?:vpc-[0-9a-f]{8}|)$"
+      ConstraintDescription: >
+        VPC Id must begin with 'vpc-' or leave blank to have a
+        new VPC created
+  ECSALBSecurityGroup:
+    Type: String
+    Description: Security Group to apply to ALB to allow access to ECS instances
 Resources:
   ECSJanusTaskRole:
     Type: AWS::IAM::Role
@@ -76,11 +94,69 @@ Resources:
               awslogs-stream-prefix: jg
           MemoryReservation: 500
           Cpu: 0
+  ECSServiceRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ecs.amazonaws.com]
+            Action: ['sts:AssumeRole']
+        Path: /
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole
   loadBalancer:
       Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
       Properties:
         Subnets: !Ref SubnetId
         Scheme: internal
+        SecurityGroups: [ !Ref AlbSecurityGroup, !Ref ECSALBSecurityGroup ]
+  AlbSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: ECS Security Group
+        VpcId: !Ref 'VpcId'
+  AlbSecurityGroupHTTPinbound:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AlbSecurityGroup
+      IpProtocol: tcp
+      FromPort: '8182'
+      ToPort: '8182'
+      CidrIp: 0.0.0.0/0
+  ALBListener:
+      Type: AWS::ElasticLoadBalancingV2::Listener
+      DependsOn: ECSServiceRole
+      Properties:
+        DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ECSTargetGroup
+        LoadBalancerArn: !Ref loadBalancer
+        Port: '8182'
+        Protocol: HTTP
+  ECSTargetGroup:
+      Type: AWS::ElasticLoadBalancingV2::TargetGroup
+      Properties:
+        Port: 8182
+        Protocol: HTTP
+        UnhealthyThresholdCount: 2
+        TargetGroupAttributes:
+          - Key: stickiness.enabled
+            Value: true
+        VpcId: !Ref VpcId
+  service:
+    DependsOn: loadBalancer
+    Type: AWS::ECS::Service
+    Properties:
+      Role: !Ref ECSServiceRole
+      TaskDefinition: !Ref ECSJanusTaskDefinition
+      DesiredCount: 1
+      LoadBalancers:
+      - TargetGroupArn: !Ref ECSTargetGroup
+        ContainerPort: 8182
+        ContainerName: !Ref 'AWS::StackName'
+      Cluster: !Ref Cluster
 Outputs:
   ECSTaskDefinition:
     Value: !Ref ECSJanusTaskDefinition

@@ -113,6 +113,27 @@ Mappings:
 Resources:
   ECSCluster:
     Type: AWS::ECS::Cluster
+  EcsSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: ECS Security Group for access between ALB and Instances.
+        VpcId: !Ref 'VpcId'
+  EcsSecurityGroupHTTPinbound:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref 'EcsSecurityGroup'
+      IpProtocol: tcp
+      FromPort: '8182'
+      ToPort: '8182'
+      SourceSecurityGroupId: !Ref 'EcsSecurityGroup'
+  EcsSecurityGroupALBports:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref 'EcsSecurityGroup'
+      IpProtocol: tcp
+      FromPort: '31000'
+      ToPort: '61000'
+      SourceSecurityGroupId: !Ref 'EcsSecurityGroup'
   ECSServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -139,7 +160,7 @@ Resources:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref ECSServiceRoleInstanceProfile
       KeyName: !If [ CreateEC2LCWithKeyPair, !Ref KeyName, !Ref "AWS::NoValue" ]
-      SecurityGroups: [ !Ref SecurityGroupId ]
+      SecurityGroups: [ !Ref SecurityGroupId, !Ref EcsSecurityGroup ]
       BlockDeviceMappings: !If
         - CreateEbsVolume
         -
@@ -185,12 +206,10 @@ Resources:
         FromPort: !Ref SecurityIngressFromPort
         ToPort: !Ref SecurityIngressToPort
         SourceSecurityGroupId: !Ref SecurityGroupId
-  Repository:
-    Type: "AWS::ECR::Repository"
 Outputs:
-  Repository:
-    Description: ECR Repository
-    Value: !Ref Repository
   Cluster:
     Description: ECS Cluster
     Value: !Ref ECSCluster
+  ECSALBSecurityGroup:
+    Description: Security Group to apply to ALB's for ECS Cluster
+    Value: !Ref EcsSecurityGroup

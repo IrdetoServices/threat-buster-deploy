@@ -2,3 +2,4 @@
 *example.yaml
 cloudformation/*.zip
 .DS_Store
+local_parameters.sh
