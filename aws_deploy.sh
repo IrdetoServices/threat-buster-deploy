@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash -x
 
 echo "Script requires working and configured AWS CLI"
 
@@ -19,7 +19,15 @@ $COMMAND
 
 build_docker_image
 
-docker tag dynamodb-janusgraph/server:latest $REPO_URL/$REPO:latest
+GIT_HEAD=`git rev-parse HEAD`
+
+pushd janus-docker
+docker build . -t janusdocker:latest -t janusdocker:v$GIT_HEAD
+popd
+
+docker tag janusdocker:latest $REPO_URL/$REPO:latest
+docker tag janusdocker:v$GIT_HEAD $REPO_URL/$REPO:v$GIT_HEAD
 docker push $REPO_URL/$REPO:latest
+docker push $REPO_URL/$REPO:v$GIT_HEAD
 
 echo "To Run Task Run"

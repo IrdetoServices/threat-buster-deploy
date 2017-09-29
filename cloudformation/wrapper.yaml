@@ -49,6 +49,7 @@ Resources:
           - account: !Ref AWS::AccountId
             region: !Ref AWS::Region
             repo: !GetAtt ecs.Outputs.Repository
+        SubnetId: !GetAtt Vpc.Outputs.SubnetIds
   DynamoTables:
     Type: AWS::CloudFormation::Stack
     Properties:

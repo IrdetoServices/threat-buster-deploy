@@ -38,9 +38,9 @@ function build_docker_image {
         zip -rq $WORKDIR/${JANUSGRAPH_DYNAMODB_SERVER_ZIP} $WORKDIR/${JANUSGRAPH_DYNAMODB_SERVER_DIRNAME}
         cp $WORKDIR/dynamodb-janusgraph-storage-backend-*.zip src/test/resources/dynamodb-janusgraph-docker
         mvn docker:build -Pdynamodb-janusgraph-docker
-
-
     fi
+
+    popd
 }
 
 function copy_cloud_formations {

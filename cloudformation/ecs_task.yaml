@@ -7,6 +7,9 @@ Parameters:
   Image:
     Type: String
     Description: Docker Image to run
+  SubnetId:
+      Type: List<AWS::EC2::Subnet::Id>
+      Description: Select at two subnets in your selected VPC.
 Resources:
   ECSJanusTaskRole:
     Type: AWS::IAM::Role
@@ -56,6 +59,11 @@ Resources:
               ContainerPort: 8182
               Protocol: tcp
           Essential: true
+          Environment:
+            - Name: DYNAMO_PREFIX
+              Value: !Ref DynamoTablePrefix
+            - Name: DYNAMO_REGION
+              Value: !Ref AWS::Region
           Image: !Ref Image
           Command:
             - "/var/jg/bin/gremlin-server.sh"
@@ -68,6 +76,11 @@ Resources:
               awslogs-stream-prefix: jg
           MemoryReservation: 500
           Cpu: 0
+  loadBalancer:
+      Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+      Properties:
+        Subnets: !Ref SubnetId
+        Scheme: internal
 Outputs:
   ECSTaskDefinition:
     Value: !Ref ECSJanusTaskDefinition
