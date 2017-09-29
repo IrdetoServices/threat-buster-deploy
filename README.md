@@ -55,6 +55,11 @@ The environment will now create!
     eb use OUTPUT_OF_LAST_COMMAND
     eb deploy
     ```
+# SSH Access to VPC
+
+By default there is no SSH access to the VPC. This is a good thing for security and maintaining CI/CD as access tends to result in issues...
+
+If you need temporary access the simplest way is to enable it on the EB Console for the instances. It will cycle the instances provisioning SSH.
     
 # Pre-reqs
 

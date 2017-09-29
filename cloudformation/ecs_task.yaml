@@ -141,6 +141,8 @@ Resources:
         Port: 8182
         Protocol: HTTP
         UnhealthyThresholdCount: 2
+        Matcher:
+          HttpCode: 200,400
         TargetGroupAttributes:
           - Key: stickiness.enabled
             Value: true
