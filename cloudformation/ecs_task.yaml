@@ -145,7 +145,7 @@ Resources:
           - Key: stickiness.enabled
             Value: true
         VpcId: !Ref VpcId
-  service:
+  Service:
     DependsOn: loadBalancer
     Type: AWS::ECS::Service
     Properties:

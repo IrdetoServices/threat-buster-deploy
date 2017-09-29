@@ -1,4 +1,4 @@
-Threat Buster Janus
+# Threat Buster Janus
 
 This project contains helper tools to build docker images for Janus Graph DB for [Threat Buster](https://github.com/IrdetoServices/threat-buster)
 
@@ -58,6 +58,6 @@ The environment will now create!
     
 # Pre-reqs
 
-* maven 
-* java
-* Python 3
+* Maven 
+* Java 8
+* Python 3.6
