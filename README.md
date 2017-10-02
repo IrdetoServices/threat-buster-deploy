@@ -4,10 +4,23 @@ This project contains helper tools to build docker images for Janus Graph DB for
 
 # Local Usage
 
+## Local Settings
+
+If you are using Pycharm/IntelliJ you can open the root project. It will not automatically handle the submodules properly - you should add each of
+them as a module and VCS root.
+
+This project uses Git Submodules. When working using Gitflow workflow you need to do it per submodule. Each module versions seperatly. When you've completed you commit the changes on the top level module. For a guide to Git Submodules see https://git-scm.com/book/en/v2/Git-Tools-Submodules
+
+Each sub module will have seperate building/environment instructions. The top level module uses Python VirtualEnvs to configure it follow notes below.
+
+
+## Local Janus DB
+
 ```
+git clone -recursive https://github.com/IrdetoServices/threat-buster-janus
+cd threat-buster-janus
 mkvirtualenv threat-buster-janus -P python3
 pip install -r requirements.txt
-git clone -recursive
 ./localdev.sh
 ```
 
