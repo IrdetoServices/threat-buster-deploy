@@ -1,6 +1,6 @@
-# Threat Buster Janus
+# Threat Buster Deploy
 
-This project contains helper tools to build docker images for Janus Graph DB for [Threat Buster](https://github.com/IrdetoServices/threat-buster)
+This project contains helper tools to deploy  [Threat Buster](https://github.com/IrdetoServices/threat-buster)
 
 # Local Usage
 
@@ -17,9 +17,9 @@ Each sub module will have seperate building/environment instructions. The top le
 ## Local Janus DB
 
 ```
-git clone -recursive https://github.com/IrdetoServices/threat-buster-janus
-cd threat-buster-janus
-mkvirtualenv threat-buster-janus -P python3
+git clone -recursive https://github.com/IrdetoServices/threat-buster-deploy
+cd threat-buster-deploy
+mkvirtualenv threat-buster-deploy -P python3
 pip install -r requirements.txt
 ./localdev.sh
 ```
