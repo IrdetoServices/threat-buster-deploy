@@ -22,9 +22,6 @@ Parameters:
       ConstraintDescription: >
         VPC Id must begin with 'vpc-' or leave blank to have a
         new VPC created
-  ECSALBSecurityGroup:
-    Type: String
-    Description: Security Group to apply to ALB to allow access to ECS instances
 Resources:
   ECSNeo4jTaskRole:
     Type: AWS::IAM::Role
@@ -51,18 +48,33 @@ Resources:
     Properties:
       Family: !Join [ "", [ "Neo4j-", !Ref "AWS::StackName"]]
       TaskRoleArn: !Ref ECSNeo4jTaskRole
+      Volumes:
+        - Name: neodata
+          Host:
+            SourcePath: /mnt/data/neodata
+        - Name: neologs
+          Host:
+            SourcePath: /mnt/data/neologs
       ContainerDefinitions:
         -
-          Name: !Ref 'AWS::StackName'
+          Name: !Join [ "", [ "Neo4j-", !Ref "AWS::StackName"]]
           PortMappings:
             - HostPort: 7687
               ContainerPort: 7687
+              Protocol: tcp
+            - HostPort: 7474
+              ContainerPort: 7474
               Protocol: tcp
           Essential: true
           Environment:
             - Name: NEO4J_AUTH
               Value: neo4j/threat-buster
           Image: !Ref Image
+          MountPoints:
+            - ContainerPath: /data
+              SourceVolume: neodata
+            - ContainerPath: /logs
+              SourceVolume: neologs
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -71,6 +83,10 @@ Resources:
               awslogs-stream-prefix: neo4j
           MemoryReservation: 500
           Cpu: 0
+          Ulimits:
+            - HardLimit: 40000
+              SoftLimit: 40000
+              Name: nofile
   ECSServiceRole:
       Type: AWS::IAM::Role
       Properties:
@@ -89,46 +105,33 @@ Resources:
         Subnets: !Ref SubnetId
         Scheme: internal
         Type: network
-  AlbSecurityGroup:
-      Type: AWS::EC2::SecurityGroup
-      Properties:
-        GroupDescription: ECS Security Group
-        VpcId: !Ref 'VpcId'
-  AlbSecurityGroupHTTPinbound:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref AlbSecurityGroup
-      IpProtocol: tcp
-      FromPort: '7687'
-      ToPort: '7687'
-      CidrIp: 0.0.0.0/0
-  ALBListener:
+  ALBBoltListener:
       Type: AWS::ElasticLoadBalancingV2::Listener
       DependsOn: ECSServiceRole
       Properties:
         DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref ECSTargetGroup
+          TargetGroupArn: !Ref ECSBoltTargetGroup
         LoadBalancerArn: !Ref loadBalancer
-        Port: '7687'
+        Port: 7687
         Protocol: TCP
-  ECSTargetGroup:
+  ECSBoltTargetGroup:
       Type: AWS::ElasticLoadBalancingV2::TargetGroup
       Properties:
         Port: 7687
         Protocol: TCP
         VpcId: !Ref VpcId
   Service:
-    DependsOn: ALBListener
+    DependsOn: ALBBoltListener
     Type: AWS::ECS::Service
     Properties:
       Role: !Ref ECSServiceRole
       TaskDefinition: !Ref ECSNeo4jTaskDefinition
       DesiredCount: 1
       LoadBalancers:
-      - TargetGroupArn: !Ref ECSTargetGroup
+      - TargetGroupArn: !Ref ECSBoltTargetGroup
         ContainerPort: 7687
-        ContainerName: !Ref 'AWS::StackName'
+        ContainerName: !Join [ "", [ "Neo4j-", !Ref "AWS::StackName"]]
       Cluster: !Ref Cluster
 Outputs:
   ECSTaskDefinition:

@@ -10,6 +10,10 @@ Parameters:
   Image:
     Type: String
     Description: The docker image
+  KeyName:
+    Type: String
+    Description: SSH Key
+    Default: ''
 Resources:
   Vpc:
     Type: AWS::CloudFormation::Stack
@@ -39,6 +43,10 @@ Resources:
         VpcId: !GetAtt Vpc.Outputs.Vpc
         SubnetId: !GetAtt Vpc.Outputs.SubnetIds
         VpcCidr: 10.0.0.0/16
+        DeviceName: /dev/xvdh
+        EbsVolumeSize: 20
+        EbsVolumeType: gp2
+        KeyName: !Ref KeyName
   neo4jTask:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -49,7 +57,6 @@ Resources:
         SubnetId: !GetAtt Vpc.Outputs.SubnetIds
         Cluster: !GetAtt ecs.Outputs.Cluster
         VpcId: !GetAtt Vpc.Outputs.Vpc
-        ECSALBSecurityGroup: !GetAtt ecs.Outputs.ECSALBSecurityGroup
   DBPassword:
     Type: AWS::CloudFormation::CustomResource
     DependsOn: RandomInput

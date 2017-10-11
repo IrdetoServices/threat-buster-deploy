@@ -88,11 +88,11 @@ Mappings:
     us-east-2:
       AMIID: ami-446f3521
     us-west-1:
-      AMIID: ami-9fadf8ff
+      AMIID: ami-d5d0e0b5
     us-west-2:
       AMIID: ami-7abc111a
     eu-west-1:
-      AMIID: ami-a1491ad2
+      AMIID: ami-13f7226a
     eu-central-1:
       AMIID: ami-54f5303b
     ap-northeast-1:
@@ -102,7 +102,7 @@ Mappings:
     ap-southeast-2:
       AMIID: ami-5781be34
     eu-west-2:
-      AMIID: ami-cb1101af
+      AMIID: ami-eb62708f
 Resources:
   ECSCluster:
     Type: AWS::ECS::Cluster
@@ -111,13 +111,21 @@ Resources:
       Properties:
         GroupDescription: ECS Security Group for access between ALB and Instances.
         VpcId: !Ref 'VpcId'
-  EcsSecurityGroupHTTPinbound:
+  EcsSecurityGroupBoltInbound:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       GroupId: !Ref 'EcsSecurityGroup'
       IpProtocol: tcp
       FromPort: '7687'
       ToPort: '7687'
+      CidrIp: !Ref VpcCidr
+  EcsSecurityGroupConsoleInbound:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref EcsSecurityGroup
+      IpProtocol: tcp
+      FromPort: 7474
+      ToPort: 7474
       CidrIp: !Ref VpcCidr
   EcsSecurityGroupALBports:
     Type: AWS::EC2::SecurityGroupIngress
@@ -161,6 +169,7 @@ Resources:
             Ebs:
              VolumeSize: !Ref EbsVolumeSize
              VolumeType: !Ref EbsVolumeType
+             Encrypted: true
         - !Ref "AWS::NoValue"
       UserData: !If
         - SetEndpointToECSAgent
@@ -172,6 +181,13 @@ Resources:
         - Fn::Base64: !Sub |
            #!/bin/bash
            echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
+           mkdir /mnt/data
+           # create ext4 filesystem on new volume
+           mkfs -t ext4 ${DeviceName}
+           # add an entry to fstab to mount volume during boot
+           echo "${DeviceName}       /mnt/data   ext4    defaults,nofail 0       2" >> /etc/fstab
+           # mount the volume on current boot
+           mount -a
   EcsInstanceAsg:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
