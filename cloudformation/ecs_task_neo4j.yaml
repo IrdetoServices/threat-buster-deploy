@@ -133,6 +133,8 @@ Resources:
         ContainerPort: 7687
         ContainerName: !Join [ "", [ "Neo4j-", !Ref "AWS::StackName"]]
       Cluster: !Ref Cluster
+      PlacementConstraints:
+        - Type: distinctInstance
 Outputs:
   ECSTaskDefinition:
     Value: "ECSNeo4jTaskDefinition"
