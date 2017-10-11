@@ -69,16 +69,9 @@ Parameters:
     Type: String
     Description: Optional - Specifies the device mapping for the Volume
     Default: ''
-  SecurityIngressFromPort:
-    Type: Number
-    Description: >
-      Optional - Specifies the Start of Security Group port to open on
-      ECS instances - defaults to port 0
-  SecurityIngressToPort:
-    Type: Number
-    Description: >
-      Optional - Specifies the End of Security Group port to open on ECS
-      instances - defaults to port 65535
+  VpcCidr:
+    Type: String
+    Description: CIDR for subnet with access to the ports on the server
 Conditions:
   CreateEC2LCWithKeyPair:
     !Not [!Equals [!Ref KeyName, '']]
@@ -123,9 +116,9 @@ Resources:
     Properties:
       GroupId: !Ref 'EcsSecurityGroup'
       IpProtocol: tcp
-      FromPort: '8182'
-      ToPort: '8182'
-      SourceSecurityGroupId: !Ref 'EcsSecurityGroup'
+      FromPort: '7687'
+      ToPort: '7687'
+      CidrIp: !Ref VpcCidr
   EcsSecurityGroupALBports:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -133,7 +126,7 @@ Resources:
       IpProtocol: tcp
       FromPort: '31000'
       ToPort: '61000'
-      SourceSecurityGroupId: !Ref 'EcsSecurityGroup'
+      CidrIp: !Ref VpcCidr
   ECSServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -196,16 +189,6 @@ Resources:
           Key: Description
           Value: "This instance is the part of the Auto Scaling group which was created through ECS Console"
           PropagateAtLaunch: 'true'
-  EcsSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: ECS Allowed Ports
-      VpcId: !Ref VpcId
-      SecurityGroupIngress:
-        IpProtocol: tcp
-        FromPort: !Ref SecurityIngressFromPort
-        ToPort: !Ref SecurityIngressToPort
-        SourceSecurityGroupId: !Ref SecurityGroupId
 Outputs:
   Cluster:
     Description: ECS Cluster

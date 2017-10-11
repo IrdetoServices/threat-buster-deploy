@@ -10,7 +10,7 @@ Parameters:
     Default: ''
   VpcCidr:
     Type: String
-    Description: Optional - Specifies the CIDR Block of VPC
+    Description: Specifies the CIDR Block of VPC
   SubnetCidr1:
     Type: String
     Description: Specifies the CIDR Block of Subnet 1

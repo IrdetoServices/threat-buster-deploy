@@ -1,9 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: ECS Task deployment
+Description: ECS Task deployment for Neo4j
 Parameters:
-  DynamoTablePrefix:
-    Type: String
-    Description: Dynamo Table Prefix for task
   Image:
     Type: String
     Description: Docker Image to run
@@ -29,69 +26,49 @@ Parameters:
     Type: String
     Description: Security Group to apply to ALB to allow access to ECS instances
 Resources:
-  ECSJanusTaskRole:
+  ECSNeo4jTaskRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Statement:
         - Effect: Allow
           Principal:
-            Service: [ ecs-tasks.amazonaws.com ]
+            Service: ecs-tasks.amazonaws.com
           Action: ['sts:AssumeRole']
       Path: /
-  DynamoPrefixedTablesPolicy:
-      Type: "AWS::IAM::Policy"
-      Properties:
-        Roles:
-          - !Ref ECSJanusTaskRole
-        PolicyName: !Join ["", ["dynamo-task-access-", !Ref DynamoTablePrefix ]]
-        PolicyDocument:
-          Version: "2012-10-17"
-          Statement:
-            -
-              Effect: Allow
-              Action:
-                  - "dynamodb:*"
-              Resource:
-                  - !Join ["", [ "arn:aws:dynamodb:", !Ref 'AWS::Region', ":", !Ref 'AWS::AccountId', ":table/", !Ref DynamoTablePrefix, "*" ]]
   ECSTaskRoleInstanceProfile:
     Type: "AWS::IAM::InstanceProfile"
     Properties:
       Path: /
       Roles:
-        - !Ref ECSJanusTaskRole
-  ECSJanusTaskLogGroup:
+        - !Ref ECSNeo4jTaskRole
+  ECSNeo4jTaskLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays: 7
-  ECSJanusTaskDefinition:
+  ECSNeo4jTaskDefinition:
     Type: "AWS::ECS::TaskDefinition"
     Properties:
-      Family: !Join [ "", [ "Janus-", !Ref "AWS::StackName"]]
-      TaskRoleArn: !Ref ECSJanusTaskRole
+      Family: !Join [ "", [ "Neo4j-", !Ref "AWS::StackName"]]
+      TaskRoleArn: !Ref ECSNeo4jTaskRole
       ContainerDefinitions:
         -
           Name: !Ref 'AWS::StackName'
           PortMappings:
-            - HostPort: 8182
-              ContainerPort: 8182
+            - HostPort: 7687
+              ContainerPort: 7687
               Protocol: tcp
           Essential: true
           Environment:
-            - Name: DYNAMO_PREFIX
-              Value: !Ref DynamoTablePrefix
-            - Name: DYNAMO_REGION
-              Value: !Ref AWS::Region
+            - Name: NEO4J_AUTH
+              Value: neo4j/threat-buster
           Image: !Ref Image
-          Command:
-            - "/var/jg/bin/gremlin-server.sh"
-            - "./conf/gremlin-server/gremlin-server.yaml"
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group: !Ref ECSJanusTaskLogGroup
+              awslogs-group: !Ref ECSNeo4jTaskLogGroup
               awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: jg
+              awslogs-stream-prefix: neo4j
           MemoryReservation: 500
           Cpu: 0
   ECSServiceRole:
@@ -111,7 +88,7 @@ Resources:
       Properties:
         Subnets: !Ref SubnetId
         Scheme: internal
-        SecurityGroups: [ !Ref AlbSecurityGroup, !Ref ECSALBSecurityGroup ]
+        Type: network
   AlbSecurityGroup:
       Type: AWS::EC2::SecurityGroup
       Properties:
@@ -122,8 +99,8 @@ Resources:
     Properties:
       GroupId: !Ref AlbSecurityGroup
       IpProtocol: tcp
-      FromPort: '8182'
-      ToPort: '8182'
+      FromPort: '7687'
+      ToPort: '7687'
       CidrIp: 0.0.0.0/0
   ALBListener:
       Type: AWS::ElasticLoadBalancingV2::Listener
@@ -133,33 +110,27 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref ECSTargetGroup
         LoadBalancerArn: !Ref loadBalancer
-        Port: '8182'
-        Protocol: HTTP
+        Port: '7687'
+        Protocol: TCP
   ECSTargetGroup:
       Type: AWS::ElasticLoadBalancingV2::TargetGroup
       Properties:
-        Port: 8182
-        Protocol: HTTP
-        UnhealthyThresholdCount: 2
-        Matcher:
-          HttpCode: 200,400
-        TargetGroupAttributes:
-          - Key: stickiness.enabled
-            Value: true
+        Port: 7687
+        Protocol: TCP
         VpcId: !Ref VpcId
   Service:
-    DependsOn: loadBalancer
+    DependsOn: ALBListener
     Type: AWS::ECS::Service
     Properties:
       Role: !Ref ECSServiceRole
-      TaskDefinition: !Ref ECSJanusTaskDefinition
+      TaskDefinition: !Ref ECSNeo4jTaskDefinition
       DesiredCount: 1
       LoadBalancers:
       - TargetGroupArn: !Ref ECSTargetGroup
-        ContainerPort: 8182
+        ContainerPort: 7687
         ContainerName: !Ref 'AWS::StackName'
       Cluster: !Ref Cluster
 Outputs:
   ECSTaskDefinition:
-    Value: !Ref ECSJanusTaskDefinition
+    Value: "ECSNeo4jTaskDefinition"
     Description: ECS Task Definition

@@ -14,7 +14,7 @@ This project uses Git Submodules. When working using Gitflow workflow you need t
 Each sub module will have seperate building/environment instructions. The top level module uses Python VirtualEnvs to configure it follow notes below.
 
 
-## Local Janus DB
+## Local Neo4j
 
 ```
 git clone -recursive https://github.com/IrdetoServices/threat-buster-deploy

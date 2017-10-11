@@ -16,16 +16,13 @@ source functions.sh
 COMMAND=`aws ecr get-login --no-include-email --region $REGION`
 $COMMAND
 
-build_docker_image
-
 GIT_HEAD=`git rev-parse HEAD`
 
-pushd janus-docker
-docker build . -t janusdocker:latest -t janusdocker:v$GIT_HEAD
+pushd threat-buster
+docker build . -t threat-buster:latest -t threat-buster:v$GIT_HEAD
 popd
 
-docker tag janusdocker:latest $REPO_URL/$REPO:latest
-docker tag janusdocker:v$GIT_HEAD $REPO_URL/$REPO:v$GIT_HEAD
+docker tag threat-buster:latest $REPO_URL/$REPO:latest
+docker tag threat-buster:v$GIT_HEAD $REPO_URL/$REPO:v$GIT_HEAD
 docker push $REPO_URL/$REPO:latest
 docker push $REPO_URL/$REPO:v$GIT_HEAD
-

@@ -38,27 +38,18 @@ Resources:
         SecurityGroupId: !GetAtt Vpc.Outputs.InstanceSecurityGroup
         VpcId: !GetAtt Vpc.Outputs.Vpc
         SubnetId: !GetAtt Vpc.Outputs.SubnetIds
-        SecurityIngressFromPort: 8182
-        SecurityIngressToPort: 8182
-  ecsTask:
+        VpcCidr: 10.0.0.0/16
+  neo4jTask:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub "https://s3.${AWS::Region}.amazonaws.com/${ScriptBucket}/ecs_task.yaml"
+      TemplateURL: !Sub "https://s3.${AWS::Region}.amazonaws.com/${ScriptBucket}/ecs_task_neo4j.yaml"
       TimeoutInMinutes: '60'
       Parameters:
-        DynamoTablePrefix: !Join [ "", [jg, !Ref "AWS::StackName" ]]
-        Image: !Ref Image
+        Image: 'neo4j:enterprise'
         SubnetId: !GetAtt Vpc.Outputs.SubnetIds
         Cluster: !GetAtt ecs.Outputs.Cluster
         VpcId: !GetAtt Vpc.Outputs.Vpc
         ECSALBSecurityGroup: !GetAtt ecs.Outputs.ECSALBSecurityGroup
-  DynamoTables:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub "https://s3.${AWS::Region}.amazonaws.com/${ScriptBucket}/dynamodb-janusgraph-tables-multiple.yaml"
-      TimeoutInMinutes: '60'
-      Parameters:
-        TablePrefix: !Join [ "", [jg, !Ref "AWS::StackName" ]]
   DBPassword:
     Type: AWS::CloudFormation::CustomResource
     DependsOn: RandomInput
@@ -67,21 +58,3 @@ Resources:
       Punctuation: true
       RDSCompatible: true
       ServiceToken: !GetAtt RandomInput.Outputs.Arn
-  ThreatBuster:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub "https://s3.${AWS::Region}.amazonaws.com/${ScriptBucket}/rds.yaml"
-      TimeoutInMinutes: '60'
-      Parameters:
-        DBUser: threatbuster
-        DBPassword: !GetAtt DBPassword.RandomString
-        BaseName: threatbuster
-        DNSName: bob
-        CertificateARN: !Ref CertificateARN
-        VpcId: !GetAtt Vpc.Outputs.Vpc
-        SubnetId: !GetAtt Vpc.Outputs.SubnetIds
-        SecurityGroupId: !GetAtt Vpc.Outputs.InstanceSecurityGroup
-Outputs:
-  TaskRunCmd:
-    Value: !Sub "aws ecs run-task --cluster ${ecs.Outputs.Cluster} --task-definition ${ecsTask.Outputs.ECSTaskDefinition} --region ${AWS::Region}"
-    Description: Command to run task
