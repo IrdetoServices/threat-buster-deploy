@@ -81,7 +81,7 @@ Resources:
               awslogs-group: !Ref ECSNeo4jTaskLogGroup
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: neo4j
-          MemoryReservation: 500
+          MemoryReservation: 993
           Cpu: 0
           Ulimits:
             - HardLimit: 40000
